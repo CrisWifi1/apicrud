@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestión de Alumnos</title>
+    <style>
+        body { font-family: Arial, sans-serif; background-color: #f4f4f9; }
+        .container { max-width: 800px; margin: auto; padding: 20px; background-color: #ffffff; border-radius: 8px; box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.1); }
+        h1 { text-align: center; color: #333; }
+        .tab-button { margin: 5px; padding: 10px 15px; cursor: pointer; border: none; border-radius: 5px; background-color: #ddd; }
+        .tab-button.active { background-color: #007bff; color: #fff; }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+        .form-group { margin-bottom: 15px; }
+        .form-group label { display: block; color: #333; font-weight: bold; }
+        .form-group input { width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 5px; }
+        .btn { padding: 10px 15px; cursor: pointer; border: none; border-radius: 5px; background-color: #007bff; color: #fff; }
+        
+        /* Estilos para la tabla */
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        th, td { padding: 12px; text-align: left; }
+        th { background-color: #007bff; color: #fff; font-weight: bold; border-top: 2px solid #0062cc; }
+        td { border-bottom: 1px solid #ddd; }
+        tr:nth-child(even) { background-color: #f9f9f9; }
+        tr:hover { background-color: #f1f1f1; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>Gestión de Alumnos</h1>
+
+    <!-- Botones de pestañas -->
+    <div>
+        <button class="tab-button" onclick="showTab('addTab')">Agregar Alumno</button>
+        <button class="tab-button" onclick="showTab('listTab')">Lista de Alumnos</button>
+        <button class="tab-button" onclick="showTab('editTab')">Editar Alumno</button>
+        <button class="tab-button" onclick="showTab('deleteTab')">Eliminar Alumno</button>
+    </div>
+
+    <!-- Contenedor para Agregar Alumno -->
+    <div id="addTab" class="tab-content">
+        <h2>Agregar Alumno</h2>
+        <div class="form-group">
+            <label for="name">Nombre:</label>
+            <input type="text" id="name" required>
+        </div>
+        <div class="form-group">
+            <label for="carrera">Carrera:</label>
+            <input type="text" id="carrera" required>
+        </div>
+        <div class="form-group">
+            <label for="edad">Edad:</label>
+            <input type="number" id="edad" required>
+        </div>
+        <button class="btn" onclick="addAlumno()">Agregar Alumno</button>
+    </div>
+
+    <!-- Contenedor para Lista de Alumnos -->
+    <div id="listTab" class="tab-content">
+        <h2>Lista de Alumnos</h2>
+        <button class="btn" onclick="getAlumnos()">Actualizar Lista</button>
+        <table id="alumnosTable">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Nombre</th>
+                    <th>Carrera</th>
+                    <th>Edad</th>
+                </tr>
+            </thead>
+            <tbody>
+                <!-- Los alumnos serán añadidos aquí -->
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Contenedor para Editar Alumno -->
+    <div id="editTab" class="tab-content">
+        <h2>Editar Alumno</h2>
+        <div class="form-group">
+            <label for="editId">ID del Alumno a editar:</label>
+            <input type="number" id="editId" required>
+        </div>
+        <div class="form-group">
+            <label for="editName">Nuevo Nombre:</label>
+            <input type="text" id="editName" required>
+        </div>
+        <div class="form-group">
+            <label for="editCarrera">Nueva Carrera:</label>
+            <input type="text" id="editCarrera" required>
+        </div>
+        <div class="form-group">
+            <label for="editEdad">Nueva Edad:</label>
+            <input type="number" id="editEdad" required>
+        </div>
+        <button class="btn" onclick="editAlumno()">Actualizar Alumno</button>
+    </div>
+
+    <!-- Contenedor para Eliminar Alumno -->
+    <div id="deleteTab" class="tab-content">
+        <h2>Eliminar Alumno</h2>
+        <div class="form-group">
+            <label for="deleteId">ID del Alumno a eliminar:</label>
+            <input type="number" id="deleteId" required>
+        </div>
+        <button class="btn" onclick="deleteAlumno()">Eliminar Alumno</button>
+    </div>
+</div>
+
+<script>
+    // Función para mostrar el contenedor de la pestaña seleccionada
+    function showTab(tabId) {
+        const contents = document.querySelectorAll('.tab-content');
+        const buttons = document.querySelectorAll('.tab-button');
+        
+        contents.forEach(content => content.classList.remove('active'));
+        buttons.forEach(button => button.classList.remove('active'));
+        
+        document.getElementById(tabId).classList.add('active');
+        document.querySelector(`[onclick="showTab('${tabId}')"]`).classList.add('active');
+    }
+
+    // Obtener todos los alumnos
+    async function getAlumnos() {
+        const response = await fetch('http://localhost:5000/alumnos');
+        const alumnos = await response.json();
+        const tableBody = document.getElementById('alumnosTable').getElementsByTagName('tbody')[0];
+        
+        // Limpiar tabla
+        tableBody.innerHTML = '';
+        
+        // Insertar datos de alumnos
+        alumnos.forEach(alumno => {
+            let row = tableBody.insertRow();
+            row.innerHTML = `
+                <td>${alumno.id}</td>
+                <td>${alumno.name}</td>
+                <td>${alumno.carrera}</td>
+                <td>${alumno.edad}</td>
+            `;
+        });
+    }
+
+    // Agregar un nuevo alumno
+    async function addAlumno() {
+        const name = document.getElementById('name').value;
+        const carrera = document.getElementById('carrera').value;
+        const edad = document.getElementById('edad').value;
+
+        const response = await fetch('http://localhost:5000/alumnos', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ name, Carrera: carrera, Edad: parseInt(edad) })
+        });
+
+        if (response.ok) {
+            alert('Alumno agregado exitosamente');
+            getAlumnos();
+        } else {
+            alert('Error al agregar el alumno');
+        }
+    }
+
+    // Editar un alumno
+    async function editAlumno() {
+        const id = document.getElementById('editId').value;
+        const name = document.getElementById('editName').value;
+        const carrera = document.getElementById('editCarrera').value;
+        const edad = document.getElementById('editEdad').value;
+
+        if (id && name && carrera && edad) {
+            const response = await fetch(`http://localhost:5000/alumnos/${id}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ name, Carrera: carrera, Edad: parseInt(edad) })
+            });
+
+            if (response.ok) {
+                alert('Alumno actualizado correctamente');
+                getAlumnos();
+            } else {
+                alert('Error al actualizar el alumno');
+            }
+        } else {
+            alert('Por favor, completa todos los campos');
+        }
+    }
+
+    // Eliminar un alumno
+    async function deleteAlumno() {
+        const id = document.getElementById('deleteId').value;
+
+        if (id) {
+            if (confirm(`¿Estás seguro de que quieres eliminar al alumno con ID ${id}?`)) {
+                const response = await fetch(`http://localhost:5000/alumnos/${id}`, { method: 'DELETE' });
+
+                if (response.ok) {
+                    alert('Alumno eliminado');
+                    getAlumnos();
+                } else {
+                    alert('Error al eliminar el alumno');
+                }
+            }
+        } else {
+            alert('Por favor, ingresa un ID para eliminar');
+        }
+    }
+
+    // Cargar lista de alumnos al cargar la página
+    window.onload = function() {
+        showTab('listTab');  // Muestra la lista de alumnos al inicio
+        getAlumnos();  // Obtiene la lista de alumnos
+    }
+</script>
+
+</body>
+</html>
